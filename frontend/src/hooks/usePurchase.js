@@ -1,18 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../supabaseClient';
 
-export const usePurchase = (id) => {
-  return useQuery({
+const API = import.meta.env.VITE_API_URL;
+
+export const usePurchase = (id) =>
+  useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data;
+      const res = await fetch(`${API}/api/purchases/${id}`);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return res.json();
     },
     enabled: !!id,
   });
-};
