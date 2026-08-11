@@ -12,8 +12,11 @@ app.use(express.json());
 // Routes
 const transactionRoutes = require('./src/routes/transactionRoutes');
 const alertRoutes = require('./src/routes/alertRoutes');
+const subscriptionRoutes = require('./src/routes/subscriptionRoutes');
+
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 app.get('/', (req, res) => {
   res.send('Transaction Intelligence API is running');
