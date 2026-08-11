@@ -1,4 +1,4 @@
-const MERCHANT_SUFFIX_RE = /\brecurring\b$/i
+const MERCHANT_SUFFIX_RE = /(?:[\s\-_]*recurring)+$/i
 
 const normalizeText = (value) =>
   String(value || '')
@@ -46,7 +46,14 @@ const classifyRecurringTransactions = (transactions = []) => {
   lookbackStart.setDate(lookbackStart.getDate() - 90)
 
   for (const [key, items] of groups.entries()) {
-    const recentItems = items
+    const trimmedItems = items.filter(({ transaction }) => {
+      const merchant = stripInjectedRecurringLabel(transaction.merchant_name)
+      return merchant.length > 0
+    })
+
+    if (trimmedItems.length < 3) continue
+
+    const recentItems = trimmedItems
       .filter(({ date }) => date >= lookbackStart && date <= now)
       .sort((a, b) => a.date - b.date)
 
@@ -60,9 +67,12 @@ const classifyRecurringTransactions = (transactions = []) => {
     const typicalGap = median(intervals)
     const consistentGap = intervals.every((gap) => Math.abs(gap - typicalGap) <= 7)
     const amountStable = new Set(recentItems.map(({ transaction }) => Number(transaction.amount).toFixed(2))).size === 1
-    const hasRecentPresence = recentItems[recentItems.length - 1].date >= lookbackStart
+    if (!consistentGap || !amountStable) continue
 
-    if (!consistentGap || !amountStable || !hasRecentPresence) continue
+    const latestRecentDate = recentItems[recentItems.length - 1].date
+    const isCurrentlyLikelyRecurring = latestRecentDate >= lookbackStart
+
+    if (!isCurrentlyLikelyRecurring) continue
 
     for (const { transaction } of recentItems) {
       transaction.is_recurring = true
@@ -71,6 +81,10 @@ const classifyRecurringTransactions = (transactions = []) => {
       transaction.recurring_cadence_days = Math.round(typicalGap)
       transaction.merchant_name = stripInjectedRecurringLabel(transaction.merchant_name)
     }
+  }
+
+  for (const transaction of enriched) {
+    transaction.merchant_name = stripInjectedRecurringLabel(transaction.merchant_name)
   }
 
   return enriched
