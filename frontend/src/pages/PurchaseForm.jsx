@@ -30,31 +30,34 @@ const inputStyle = {
 export default function PurchaseForm() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { data: purchase } = usePurchase(id)
+  const { data: transaction } = usePurchase(id)
   const { mutate: create, isPending: isCreating } = useCreatePurchase()
   const { mutate: update, isPending: isUpdating } = useUpdatePurchase()
 
-  const [form, setForm] = useState({ merchant: '', amount: '', date: '', category: '', notes: '' })
+  const [form, setForm] = useState({ merchant_name: '', amount: '', transaction_date: '', category: '', description: '' })
 
   useEffect(() => {
-    if (purchase) {
+    if (transaction) {
       setForm({
-        merchant: purchase.merchant || '',
-        amount: purchase.amount || '',
-        date: purchase.date ? new Date(purchase.date).toISOString().split('T')[0] : '',
-        category: purchase.category || '',
-        notes: purchase.notes || '',
+        merchant_name: transaction.merchant_name || '',
+        amount: transaction.amount || '',
+        transaction_date: transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '',
+        category: transaction.category || '',
+        description: transaction.description || '',
       })
     }
-  }, [purchase])
+  }, [transaction])
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const data = { ...form, amount: parseFloat(form.amount) }
+    const data = {
+      ...form,
+      amount: parseFloat(form.amount),
+    }
     if (id) {
-      update({ id, updates: data }, { onSuccess: () => navigate(`/purchases/${id}`) })
+      update({ id, updates: data }, { onSuccess: () => navigate(`/transactions/${id}`) })
     } else {
       create(data, { onSuccess: () => navigate('/') })
     }
@@ -69,13 +72,13 @@ export default function PurchaseForm() {
           {id ? 'EDIT' : 'NEW'}
         </div>
         <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>
-          {id ? 'Edit Purchase' : 'Add Purchase'}
+          {id ? 'Edit Transaction' : 'Add Transaction'}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 32 }}>
         <Field label="Merchant">
-          <input style={inputStyle} value={form.merchant} onChange={set('merchant')} placeholder="Amazon, Starbucks..." required />
+          <input style={inputStyle} value={form.merchant_name} onChange={set('merchant_name')} placeholder="Amazon, Starbucks..." required />
         </Field>
 
         <Field label="Amount ($)">
@@ -83,25 +86,21 @@ export default function PurchaseForm() {
         </Field>
 
         <Field label="Date">
-          <input style={inputStyle} type="date" value={form.date} onChange={set('date')} required />
+          <input style={inputStyle} type="date" value={form.transaction_date} onChange={set('transaction_date')} required />
         </Field>
 
         <Field label="Category">
-          <select
-            style={{ ...inputStyle, appearance: 'none' }}
-            value={form.category}
-            onChange={set('category')}
-          >
+          <select style={{ ...inputStyle, appearance: 'none' }} value={form.category} onChange={set('category')}>
             <option value="">Select category...</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </Field>
 
-        <Field label="Notes">
+        <Field label="Description">
           <textarea
             style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }}
-            value={form.notes}
-            onChange={set('notes')}
+            value={form.description}
+            onChange={set('description')}
             placeholder="Optional notes..."
           />
         </Field>
@@ -122,7 +121,7 @@ export default function PurchaseForm() {
               fontFamily: 'Syne, sans-serif',
             }}
           >
-            {isPending ? 'Saving...' : id ? 'Save Changes' : 'Add Purchase'}
+            {isPending ? 'Saving...' : id ? 'Save Changes' : 'Add Transaction'}
           </button>
           <button
             type="button"

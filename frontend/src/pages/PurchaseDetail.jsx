@@ -6,8 +6,8 @@ import { useDeletePurchase } from '../hooks/usePurchases'
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data: p, isLoading, error } = usePurchase(id)
-  const { mutate: deletePurchase } = useDeletePurchase()
+  const { data: transaction, isLoading, error } = usePurchase(id)
+  const { mutate: deleteTransaction } = useDeletePurchase()
 
   if (isLoading) return (
     <div style={{ color: 'var(--muted)', fontFamily: 'DM Mono, monospace', fontSize: 13 }}>loading...</div>
@@ -15,11 +15,11 @@ export default function PurchaseDetail() {
   if (error) return (
     <div style={{ color: '#ff6584', fontFamily: 'DM Mono, monospace', fontSize: 13 }}>error: {error.message}</div>
   )
-  if (!p) return null
+  if (!transaction) return null
 
   const handleDelete = () => {
-    if (confirm('Delete this purchase?')) {
-      deletePurchase(id, { onSuccess: () => navigate('/') })
+    if (confirm('Delete this transaction?')) {
+      deleteTransaction(id, { onSuccess: () => navigate('/') })
     }
   }
 
@@ -42,21 +42,21 @@ export default function PurchaseDetail() {
       </button>
 
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--muted)', fontWeight: 600, marginBottom: 6 }}>PURCHASE DETAIL</div>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>{p.merchant || 'Unnamed'}</h1>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--muted)', fontWeight: 600, marginBottom: 6 }}>TRANSACTION DETAIL</div>
+        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>{transaction.merchant_name || 'Unnamed'}</h1>
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '0 24px', marginBottom: 24 }}>
-        <Row label="Amount" value={`$${parseFloat(p.amount || 0).toFixed(2)}`} />
-        <Row label="Date" value={p.date ? new Date(p.date).toLocaleDateString() : '—'} />
-        <Row label="Category" value={p.category || '—'} />
-        {p.notes && <Row label="Notes" value={p.notes} />}
-        <Row label="ID" value={<span style={{ fontFamily: 'DM Mono, monospace', fontSize: 12, color: 'var(--muted)' }}>{p.id}</span>} />
+        <Row label="Amount" value={`$${parseFloat(transaction.amount || 0).toFixed(2)}`} />
+        <Row label="Date" value={transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString() : '—'} />
+        <Row label="Category" value={transaction.category || '—'} />
+        {transaction.description && <Row label="Description" value={transaction.description} />}
+        <Row label="ID" value={<span style={{ fontFamily: 'DM Mono, monospace', fontSize: 12, color: 'var(--muted)' }}>{transaction.id}</span>} />
       </div>
 
       <div style={{ display: 'flex', gap: 12 }}>
         <button
-          onClick={() => navigate(`/purchases/${id}/edit`)}
+          onClick={() => navigate(`/transactions/${id}/edit`)}
           style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '13px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Syne, sans-serif' }}
         >
           Edit

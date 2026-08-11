@@ -10,11 +10,13 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-const purchaseRoutes = require('./src/routes/purchaseRoutes');
-app.use('/api/purchases', purchaseRoutes);
+const transactionRoutes = require('./src/routes/transactionRoutes');
+const alertRoutes = require('./src/routes/alertRoutes');
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/alerts', alertRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Purchase Intelligence API is running');
+  res.send('Transaction Intelligence API is running');
 });
 
 // Start server
