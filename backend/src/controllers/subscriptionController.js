@@ -3,10 +3,10 @@ const Subscription = require('../models/Subscription');
 // Get all subscriptions
 exports.getAllSubscriptions = async (req, res) => {
   try {
-    const subscriptions = await Subscription.getAll();
+    const subscriptions = await Subscription.getAll(req);
     res.json(subscriptions);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(error.code === 'PGRST301' ? 401 : 500).json({ error: error.message });
   }
 };
 
@@ -14,23 +14,23 @@ exports.getAllSubscriptions = async (req, res) => {
 exports.getSubscriptionById = async (req, res) => {
   try {
     const { id } = req.params;
-    const subscription = await Subscription.getById(id);
+    const subscription = await Subscription.getById(req, id);
     if (!subscription) {
       return res.status(404).json({ error: 'Subscription not found' });
     }
     res.json(subscription);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(error.code === 'PGRST301' ? 401 : 500).json({ error: error.message });
   }
 };
 
 // Create a new subscription
 exports.createSubscription = async (req, res) => {
   try {
-    const subscription = await Subscription.create(req.body);
+    const subscription = await Subscription.create(req, req.body);
     res.status(201).json(subscription);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(error.code === 'PGRST301' ? 401 : 400).json({ error: error.message });
   }
 };
 
@@ -38,10 +38,15 @@ exports.createSubscription = async (req, res) => {
 exports.updateSubscription = async (req, res) => {
   try {
     const { id } = req.params;
-    const subscription = await Subscription.update(id, req.body);
+    const subscription = await Subscription.update(req, id, req.body);
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
     res.json(subscription);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(error.code === 'PGRST301' ? 401 : 400).json({ error: error.message });
   }
 };
 
@@ -49,9 +54,9 @@ exports.updateSubscription = async (req, res) => {
 exports.deleteSubscription = async (req, res) => {
   try {
     const { id } = req.params;
-    await Subscription.delete(id);
+    await Subscription.delete(req, id);
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(error.code === 'PGRST301' ? 401 : 500).json({ error: error.message });
   }
 };
