@@ -5,6 +5,9 @@ const billController = require('../controllers/billController');
 // Get all bills
 router.get('/', billController.getAllBills);
 
+// Get upcoming bills (due within 7 days)
+router.get('/upcoming', billController.getUpcomingBills);
+
 // Get bill by ID
 router.get('/:id', billController.getBillById);
 
@@ -16,8 +19,5 @@ router.put('/:id', billController.updateBill);
 
 // Delete bill by ID
 router.delete('/:id', billController.deleteBill);
-
-// Get upcoming bills (due within 7 days)
-router.get('/upcoming', billController.getUpcomingBills);
 
 module.exports = router;
