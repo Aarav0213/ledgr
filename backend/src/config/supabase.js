@@ -1,29 +1,46 @@
-const { createClient } = require('@supabase/supabase-js');
+﻿const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('Supabase URL or ANON KEY is missing. Check your .env file.');
+  console.warn('Supabase URL or ANON KEY is missing. Check your environment variables.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
+  },
+});
 
-const createSupabaseForRequest = (accessToken) =>
-  createClient(supabaseUrl, supabaseKey, {
+const createSupabaseForRequest = (accessToken) => {
+  if (!accessToken) {
+    return createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+
+  return createClient(supabaseUrl, supabaseKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false,
     },
-    global: accessToken
-      ? { headers: { Authorization: `Bearer ${accessToken}` } }
-      : undefined,
+    accessToken: async () => accessToken,
   });
+};
 
 const getAuthenticatedUser = async (req) => {
   const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  const token = header.startsWith('Bearer ')
+    ? header.slice(7).trim()
+    : null;
 
   if (!token) {
     const error = new Error('Authentication required');
@@ -31,14 +48,23 @@ const getAuthenticatedUser = async (req) => {
     throw error;
   }
 
-  const authClient = createSupabaseForRequest(token);
+  const authClient = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+
   const {
     data: { user },
     error,
   } = await authClient.auth.getUser(token);
 
   if (error || !user) {
-    const authError = new Error(error?.message || 'Invalid authentication token');
+    const authError = new Error(
+      error?.message || 'Invalid authentication token'
+    );
     authError.status = 401;
     throw authError;
   }
