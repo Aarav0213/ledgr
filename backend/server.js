@@ -14,12 +14,10 @@ const transactionRoutes = require('./src/routes/transactionRoutes');
 const alertRoutes = require('./src/routes/alertRoutes');
 const subscriptionRoutes = require('./src/routes/subscriptionRoutes');
 const billRoutes = require('./src/routes/billRoutes');
-const billRoutes = require('./src/routes/billRoutes');
 
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/bills', billRoutes);
 app.use('/api/bills', billRoutes);
 
 app.get('/', (req, res) => {
