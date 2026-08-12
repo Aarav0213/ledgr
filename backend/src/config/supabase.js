@@ -4,7 +4,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('Supabase URL or ANON KEY is missing. Check your environment variables.');
+  console.warn('Supabase URL or ANON KEY is missing. Check your .env file.');
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -16,23 +16,15 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 const createSupabaseForRequest = (accessToken) => {
-  if (!accessToken) {
-    return createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    });
-  }
-
   return createClient(supabaseUrl, supabaseKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false,
     },
-    accessToken: async () => accessToken,
+    accessToken: accessToken
+      ? async () => accessToken
+      : undefined,
   });
 };
 
@@ -56,12 +48,9 @@ const getAuthenticatedUser = async (req) => {
     },
   });
 
-  const {
-    data: { user },
-    error,
-  } = await authClient.auth.getUser(token);
+  const { data, error } = await authClient.auth.getClaims(token);
 
-  if (error || !user) {
+  if (error || !data?.claims) {
     const authError = new Error(
       error?.message || 'Invalid authentication token'
     );
@@ -69,7 +58,11 @@ const getAuthenticatedUser = async (req) => {
     throw authError;
   }
 
-  return user;
+  return {
+    id: data.claims.sub,
+    email: data.claims.email,
+    role: data.claims.role,
+  };
 };
 
 module.exports = {
