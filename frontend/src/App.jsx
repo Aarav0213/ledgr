@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import PurchaseList from './pages/PurchaseList.jsx'
 import PurchaseForm from './pages/PurchaseForm.jsx'
@@ -6,7 +6,7 @@ import PurchaseDetail from './pages/PurchaseDetail.jsx'
 import { supabase } from './supabaseClient'
 
 const NAV = [
-  { to: '/', label: 'All Transactions', icon: '◈', exact: true },
+  { to: '/', label: 'All Transactions', icon: 'â—ˆ', exact: true },
   { to: '/transactions/new', label: 'Add Transaction', icon: '+', exact: false },
 ]
 
@@ -70,6 +70,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
+    window.__ledgrSupabase = supabase
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null)
       setAuthLoading(false)
@@ -147,3 +148,4 @@ export default function App() {
     </div>
   )
 }
+
