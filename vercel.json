@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://ledgr-tgrr.onrender.com/api/:path*"
+      "destination": "https://ledgr-4qvv.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
