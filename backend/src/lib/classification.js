@@ -28,6 +28,13 @@ const median = (values) => {
     : (sorted[mid - 1] + sorted[mid]) / 2
 }
 
+const NON_RECURRING_CATEGORIES = new Set([
+  'TRANSFER IN',
+  'TRANSFER OUT',
+  'TRAVEL',
+  'TRANSFER',
+])
+
 const classifyRecurringTransactions = (transactions = []) => {
   const enriched = transactions.map((transaction) => ({
     ...transaction,
@@ -43,70 +50,58 @@ const classifyRecurringTransactions = (transactions = []) => {
   for (const transaction of enriched) {
     const date = toDate(transaction.transaction_date)
     const merchant = transaction.merchant_name || ''
+    const category = normalizeText(transaction.category).toUpperCase()
 
-    if (!date || !merchant) continue
+    if (!date || !merchant || NON_RECURRING_CATEGORIES.has(category)) continue
 
     const amount = Number(transaction.amount)
-
     if (!Number.isFinite(amount)) continue
 
     const key = `${merchant.toLowerCase()}::${amount.toFixed(2)}`
+    if (!groups.has(key)) groups.set(key, [])
 
-    if (!groups.has(key)) {
-      groups.set(key, [])
-    }
-
-    groups.get(key).push({
-      transaction,
-      date,
-    })
+    groups.get(key).push({ transaction, date })
   }
 
-  for (const [key, items] of groups.entries()) {
-    if (items.length < 3) continue
+  for (const items of groups.values()) {
+    // Four or more matching occurrences gives us enough history to distinguish
+    // a subscription-like pattern from a couple of coincidental purchases.
+    if (items.length < 4) continue
 
     const sortedItems = [...items].sort(
       (a, b) => a.date.getTime() - b.date.getTime()
     )
 
     const intervals = []
-
     for (let i = 1; i < sortedItems.length; i += 1) {
-      const gap = daysBetween(
-        sortedItems[i - 1].date,
-        sortedItems[i].date
-      )
-
-      if (gap > 0) {
-        intervals.push(gap)
-      }
+      const gap = daysBetween(sortedItems[i - 1].date, sortedItems[i].date)
+      if (gap > 0) intervals.push(gap)
     }
 
-    if (intervals.length < 2) continue
+    if (intervals.length < 3) continue
 
     const typicalGap = median(intervals)
-
     if (!typicalGap || typicalGap <= 0) continue
 
+    // Allow small billing-date drift while rejecting irregular purchase bursts.
+    const tolerance = Math.max(5, Math.min(7, typicalGap * 0.2))
     const consistentGap = intervals.every(
-      (gap) => Math.abs(gap - typicalGap) <= Math.max(7, typicalGap * 0.25)
+      (gap) => Math.abs(gap - typicalGap) <= tolerance
     )
 
     if (!consistentGap) continue
 
     const merchantName = sortedItems[0].transaction.merchant_name
-
     const recurringGroup = `${merchantName}::${Number(
       sortedItems[0].transaction.amount
     ).toFixed(2)}`
 
     for (const { transaction } of sortedItems) {
       transaction.is_recurring = true
-      transaction.recurring_confidence = 0.85
+      transaction.recurring_confidence = 0.9
       transaction.recurring_group = recurringGroup
       transaction.recurring_cadence_days = Math.round(typicalGap)
-      transaction.merchant_name =
-        stripInjectedRecurringLabel(transaction.merchant_name)
+      transaction.merchant_name = stripInjectedRecurringLabel(transaction.merchant_name)
     }
   }
 
@@ -134,9 +129,7 @@ const shouldTreatAsReceiptEmail = ({
     /\bgeneric ai is hurting your scholarship applications\b/i,
   ]
 
-  if (blockedPatterns.some((pattern) => pattern.test(haystack))) {
-    return false
-  }
+  if (blockedPatterns.some((pattern) => pattern.test(haystack))) return false
 
   const receiptSignals = [
     /\breceipt\b/i,
